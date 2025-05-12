@@ -20,6 +20,7 @@ The system specifically handles critical anomalies, such as CPU overload, memory
 ### Prerequisites
 - **Ansible:** Ensure that Ansible is installed on your local machine.
 - **SSH:** SSH must be installed and configured on both your local and remote machines.
+- **sshpass:** The `sshpass` utility must be installed locally in order to run the bootstrap role.
 
 ***NOTE:*** This project currently only works on **Ubuntu 24.04 LTS** operating systems.
 
@@ -41,8 +42,7 @@ The `playbooks/bootstrap.yml` playbook must be executed first, as it prepares th
 ansible-playbook playbooks/bootstrap.yml \
   --extra-vars "ansible_user=<your-ssh-username>" \
   --ask-pass \
-  --ask-become-pass \
-  --ssh-common-args='-o StrictHostKeyChecking=no'
+  --ask-become-pass
 ```
 
 **Note:** Replace `<your-ssh-username>` with the actual username that has SSH access to the target host.
