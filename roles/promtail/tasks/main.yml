@@ -1,0 +1,29 @@
+---
+- name: Ensure Promtail config directory exists
+  ansible.builtin.file:
+    path: /etc/promtail
+    state: directory
+    mode: '0755'
+
+- name: Deploy Promtail config (template)
+  ansible.builtin.template:
+    src: promtail-config.yml.j2
+    dest: /etc/promtail/config.yml
+    mode: '0644'
+
+- name: Deploy Promtail container
+  community.docker.docker_container:
+    name: "{{ promtail_container_name }}"
+    image: "{{ promtail_image }}"
+    command: >-
+      -config.file=/etc/promtail/config.yml
+    ports:
+      - "{{ promtail_http_listen_port }}:9080"
+      - "{{ promtail_grpc_listen_port }}:{{ promtail_grpc_listen_port }}"
+    volumes:
+      - /etc/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /tmp:/tmp:rw
+    networks:
+      - name: "{{ network_name }}"
+    restart_policy: unless-stopped

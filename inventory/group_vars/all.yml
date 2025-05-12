@@ -1,0 +1,48 @@
+ansible_user_name: ansible
+ssh_key_path: "{{ lookup('env', 'HOME') }}/.ssh/ansible_remote"
+eda_ssh_key_path: /home/ansible/.ssh/eda_remote
+ansible_ssh_pubkey_path: "{{ ssh_key_path }}.pub"
+
+network_name: monitoring_net
+
+cadvisor_container_name: cadvisor
+cadvisor_image: gcr.io/cadvisor/cadvisor:v0.47.1
+cadvisor_port: 8080
+
+alertmanager_webhook_host: "{{ SERVER_IP }}"
+alertmanager_webhook_port: "5000"
+
+alertmanager_image: "prom/alertmanager:latest"
+alertmanager_instances:
+  - { name: alertmanager1, peer1: alertmanager2, host_port: 9093 }
+  - { name: alertmanager2, peer1: alertmanager1, host_port: 19093 }
+
+grafana_prometheus_host: "{{ SERVER_IP }}"
+grafana_loki_host: "{{ SERVER_IP }}"
+grafana_image: grafana/grafana:latest
+grafana_port: 3000
+grafana_storage_volume: grafana-storage
+
+loki_port: 3100
+loki_image: grafana/loki:latest
+loki_container_name: loki
+
+node_exporter_container_name: node-exporter
+node_exporter_image: prom/node-exporter:latest
+node_exporter_port: 9100
+
+prometheus_image: prom/prometheus:latest
+prometheus_container_name: prometheus
+prometheus_port: 9090
+
+promtail_http_listen_port: 9080
+promtail_grpc_listen_port: 0
+promtail_container_name: promtail
+promtail_image: grafana/promtail:latest
+
+eda_image_name: eda-controller-with-sdk
+eda_image_tag: latest
+eda_container_name: ansible-eda-controller
+eda_controller_port: 5000
+eda_rulebook_filename: selfhealing_rulebook.yml
+eda_controller_host: "{{ SERVER_IP }}"

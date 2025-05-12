@@ -1,0 +1,21 @@
+---
+- name: Start container when down
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    eda_controller_host: "{{ eda_controller_host }}"
+
+  collections:
+    - community.docker
+
+  tasks:
+    - name: Debug container name
+      ansible.builtin.debug:
+        msg: "{% raw %}Container down: {{ container_name }}{% endraw %}"
+
+    - name: Start container remotely
+      community.docker.docker_container:
+        name: "{% raw %}{{ container_name }}{% endraw %}"
+        state: started
+      delegate_to: "{% raw %}{{ target_host if target_host != eda_controller_host else omit }}{% endraw %}"

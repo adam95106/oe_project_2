@@ -1,0 +1,10 @@
+---
+- name: Deploy Node Exporter
+  community.docker.docker_container:
+    name: "{{ node_exporter_container_name }}"
+    image: "{{ node_exporter_image }}"
+    ports:
+      - "{{ node_exporter_port }}:9100"
+    networks:
+      - name: "{{ network_name }}"
+    restart_policy: always

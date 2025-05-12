@@ -1,0 +1,99 @@
+---
+- name: Ensure .ssh directory exists on controller
+  file:
+    path: "{{ ssh_key_path | dirname }}"
+    state: directory
+    mode: '0700'
+    owner: "{{ lookup('env', 'USER') }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Generate SSH keypair on controller if not exists
+  command: ssh-keygen -t ed25519 -f "{{ ssh_key_path }}" -C "ansible-bootstrap" -N ''
+  args:
+    creates: "{{ ssh_key_path }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Set correct ownership on controller SSH key files
+  file:
+    path: "{{ item }}"
+    owner: "{{ lookup('env', 'USER') }}"
+    group: "{{ lookup('env', 'USER') }}"
+    mode: '0600'
+  with_items:
+    - "{{ ssh_key_path }}"
+    - "{{ ssh_key_path }}.pub"
+  delegate_to: localhost
+  run_once: true
+
+- name: Ensure ansible user exists
+  ansible.builtin.user:
+    name: "{{ ansible_user_name }}"
+    shell: /bin/bash
+    create_home: true
+
+- name: Ensure .ssh directory exists for ansible user
+  file:
+    path: "/home/{{ ansible_user_name }}/.ssh"
+    state: directory
+    owner: "{{ ansible_user_name }}"
+    group: "{{ ansible_user_name }}"
+    mode: '0700'
+
+- name: Generate EDA SSH keypair on server
+  command: ssh-keygen -t ed25519 -f "{{ eda_ssh_key_path }}" -C "eda-controller" -N ''
+  args:
+    creates: "{{ eda_ssh_key_path }}"
+  delegate_to: server
+  run_once: true
+
+- name: Set permissions on EDA keypair
+  file:
+    path: "{{ item }}"
+    owner: "{{ ansible_user_name }}"
+    group: "{{ ansible_user_name }}"
+    mode: '0600'
+  loop:
+    - "{{ eda_ssh_key_path }}"
+    - "{{ eda_ssh_key_path }}.pub"
+  delegate_to: server
+  run_once: true
+
+- name: Read EDA public key from server
+  slurp:
+    src: "{{ eda_ssh_key_path }}.pub"
+  register: eda_pubkey_raw
+  delegate_to: server
+  run_once: true
+
+- name: Set fact for EDA public key
+  set_fact:
+    eda_public_key: "{{ eda_pubkey_raw.content | b64decode }}"
+  run_once: true
+
+- name: Add EDA public key to ansible user
+  authorized_key:
+    user: "{{ ansible_user_name }}"
+    key: "{{ eda_public_key }}"
+    state: present
+
+- name: Read controller public key content
+  set_fact:
+    bootstrap_public_key: "{{ lookup('file', ansible_ssh_pubkey_path) }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Add controller public key to ansible user
+  authorized_key:
+    user: "{{ ansible_user_name }}"
+    key: "{{ bootstrap_public_key }}"
+    state: present
+
+- name: Allow ansible user passwordless sudo
+  copy:
+    dest: "/etc/sudoers.d/{{ ansible_user_name }}"
+    content: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
+    owner: root
+    group: root
+    mode: '0440'

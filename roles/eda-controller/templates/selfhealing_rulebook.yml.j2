@@ -1,0 +1,48 @@
+---
+- name: Self-healing Rulebook (Extended)
+  hosts: localhost
+  gather_facts: false
+
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: {{ eda_controller_port }}
+        path: /alerts
+
+{% raw %}
+  rules:
+
+    - name: Handle ContainerDown
+      condition: >-
+        event.payload.alerts[0].labels.alertname == "ContainerDown"
+        and event.payload.status == "firing"
+      actions:
+        - run_playbook:
+            name: /rulebooks/handle_down.yml
+            extra_vars:
+              container_name: "{{ event.payload.alerts[0].labels.name }}"
+              target_host: "{{ event.payload.alerts[0].labels.instance[:event.payload.alerts[0].labels.instance.find(':')] }}"
+
+    - name: Handle HighCPUUsage
+      condition: >-
+        event.payload.alerts[0].labels.alertname == "HighCPUUsage"
+        and event.payload.status == "firing"
+      actions:
+        - run_playbook:
+            name: /rulebooks/handle_cpu.yml
+            extra_vars:
+              container_name: "{{ event.payload.alerts[0].labels.name }}"
+              target_host: "{{ event.payload.alerts[0].labels.instance[:event.payload.alerts[0].labels.instance.find(':')] }}"
+
+    - name: Handle HighMemoryUsage
+      condition: >-
+        event.payload.alerts[0].labels.alertname == "HighMemoryUsage"
+        and event.payload.status == "firing"
+      actions:
+        - run_playbook:
+            name: /rulebooks/handle_memory.yml
+            extra_vars:
+              container_name: "{{ event.payload.alerts[0].labels.name }}"
+              target_host: "{{ event.payload.alerts[0].labels.instance[:event.payload.alerts[0].labels.instance.find(':')] }}"
+
+{% endraw %}

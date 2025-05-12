@@ -1,0 +1,12 @@
+route:
+  receiver: 'selfhealing-webhook'
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 5m
+
+receivers:
+  - name: 'selfhealing-webhook'
+    webhook_configs:
+      - url: "http://{{ alertmanager_webhook_host }}:{{ alertmanager_webhook_port }}/alerts"
+        send_resolved: true

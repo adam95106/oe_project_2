@@ -1,0 +1,23 @@
+---
+- name: Restart container due to High Memory Usage
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    eda_controller_host: "{{ eda_controller_host }}"
+
+  collections:
+    - community.docker
+
+  tasks:
+    - name: Debug container name
+      ansible.builtin.debug:
+        msg: "{% raw %}Restarting container due to high memory usage: {{ container_name }}{% endraw %}"
+
+    - name: Restart container remotely
+      community.docker.docker_container:
+        name: "{% raw %}{{ container_name }}{% endraw %}"
+        state: started
+        restart: true
+      delegate_to: "{% raw %}{{ target_host if target_host != eda_controller_host else omit }}{% endraw %}"
+      become: true

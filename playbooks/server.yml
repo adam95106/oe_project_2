@@ -1,0 +1,17 @@
+- name: Deploy self-healing monitoring stack (SERVER)
+  hosts: monitoring_server
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - setup
+    - prometheus
+    - prometheus-targets
+    - grafana
+    - loki
+    - promtail
+    - node-exporter
+    - cadvisor
+    - alertmanager
+    - eda-controller

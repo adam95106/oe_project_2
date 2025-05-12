@@ -1,0 +1,29 @@
+---
+- name: Ensure Loki configuration directory exists
+  ansible.builtin.file:
+    path: /etc/loki
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy Loki configuration (template)
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: /etc/loki/config.yml
+    mode: '0644'
+
+- name: Deploy Loki container
+  community.docker.docker_container:
+    name: "{{ loki_container_name }}"
+    image: "{{ loki_image }}"
+    user: root
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - /etc/loki/config.yml:/etc/loki/config.yml:ro
+      - /opt/loki:/tmp/loki
+    ports:
+      - "{{ loki_port }}:3100"
+    networks:
+      - name: "{{ network_name }}"
+    restart_policy: always

@@ -1,0 +1,17 @@
+- name: Deploy monitoring clients (NODES)
+  hosts: monitoring_clients
+  become: true
+  vars_files:
+    - ../group_vars/all.yml
+
+  roles:
+    - setup
+    - promtail
+    - node-exporter
+    - cadvisor
+
+- name: Refresh Prometheus target config
+  hosts: monitoring_server
+  become: true
+  roles:
+    - prometheus-targets

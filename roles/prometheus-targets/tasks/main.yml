@@ -1,0 +1,25 @@
+---
+- name: Ensure targets directory exists
+  ansible.builtin.file:
+    path: /etc/prometheus/targets
+    state: directory
+    mode: '0755'
+
+- name: Generate node-exporter file_sd_config
+  ansible.builtin.template:
+    src: node-exporter.json.j2
+    dest: /etc/prometheus/targets/node-exporter.json
+    mode: '0644'
+
+- name: Generate cadvisor file_sd_config
+  ansible.builtin.template:
+    src: cadvisor.json.j2
+    dest: /etc/prometheus/targets/cadvisor.json
+    mode: '0644'
+
+- name: Reload Prometheus (if needed)
+  ansible.builtin.uri:
+    url: http://localhost:9090/-/reload
+    method: POST
+  register: reload_response
+  failed_when: reload_response.status not in [200, 204]

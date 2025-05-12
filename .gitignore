@@ -1,0 +1,53 @@
+# Editor backup and temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+*~
+
+# Ansible retry files
+*.retry
+
+# Log files
+*.log
+
+# SSH keys (NEVER version control private keys!)
+*.key
+*.pem
+*.pub
+id_*
+ssh_host_*
+
+# Vault and secrets
+*.vault
+*.vault.yml
+vault.yml
+secrets.yml
+private_vars.yml
+
+# Inventory cache and host facts
+.cache/
+*.fact
+*.db
+
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# IDE/editor configs
+.vscode/
+.idea/
+
+# OS system files
+.DS_Store
+Thumbs.db
+
+# Project-specific
+deploy/keys/
+*.tar.gz
+*.zip

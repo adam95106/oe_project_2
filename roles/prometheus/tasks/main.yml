@@ -1,0 +1,34 @@
+---
+- name: Ensure Prometheus config directory exists
+  ansible.builtin.file:
+    path: /etc/prometheus
+    state: directory
+    mode: '0755'
+
+- name: Copy Prometheus main config
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0644'
+
+- name: Copy alert rules
+  ansible.builtin.copy:
+    src: alert.rules.yml
+    dest: /etc/prometheus/alert.rules.yml
+    mode: '0644'
+
+- name: Deploy Prometheus container
+  community.docker.docker_container:
+    name: "{{ prometheus_container_name }}"
+    image: "{{ prometheus_image }}"
+    command: >
+      --config.file=/etc/prometheus/prometheus.yml
+      --web.enable-lifecycle
+    ports:
+      - "{{ prometheus_port }}:9090"
+    volumes:
+      - "/etc/prometheus:/etc/prometheus:ro"
+    privileged: true
+    networks:
+      - name: "{{ network_name }}"
+    restart_policy: always

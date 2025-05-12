@@ -1,0 +1,12 @@
+[
+  {
+    "targets": [
+    {% for host in (groups['monitoring_clients'] + groups['monitoring_server']) | unique %}
+      "{{ hostvars[host]['ansible_host'] | default(host) }}:8080"{% if not loop.last %},{% endif %}
+    {% endfor %}
+    ],
+    "labels": {
+      "job": "cadvisor"
+    }
+  }
+]

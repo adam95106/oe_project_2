@@ -1,0 +1,62 @@
+---
+- name: Ensure /opt/rulebooks exists
+  ansible.builtin.file:
+    path: /opt/rulebooks
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Render all rulebook templates
+  ansible.builtin.template:
+    src: "{{ item }}"
+    dest: "/opt/rulebooks/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    mode: '0644'
+  loop: "{{ lookup('ansible.builtin.fileglob', role_path + '/rulebooks/*.yml.j2', wantlist=True) }}"
+  loop_control:
+    label: "{{ item | basename }}"
+
+- name: Copy inventory file
+  ansible.builtin.copy:
+    src: "{{ role_path }}/rulebooks/inventory.yml"
+    dest: /opt/rulebooks/inventory.yml
+    mode: '0644'
+
+- name: Copy Dockerfile into build context
+  ansible.builtin.copy:
+    src: "{{ role_path }}/rulebooks/Dockerfile"
+    dest: /opt/rulebooks/Dockerfile
+    mode: '0644'
+
+- name: Build EDA Controller image with Docker SDK
+  community.docker.docker_image:
+    name: eda-controller-with-sdk
+    source: build
+    build:
+      path: /opt/rulebooks
+      dockerfile: Dockerfile
+    tag: latest
+
+- name: Deploy Ansible EDA Controller container
+  community.docker.docker_container:
+    name: ansible-eda-controller
+    image: eda-controller-with-sdk:latest
+    user: root
+    ports:
+      - "5000:5000"
+    volumes:
+      - /opt/rulebooks:/rulebooks:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "{{ eda_ssh_key_path }}:/tmp/id_ed25519:ro"
+      - "{{ eda_ssh_key_path }}.pub:/tmp/id_ed25519.pub:ro"
+    command:
+      - ansible-rulebook
+      - -i
+      - /rulebooks/inventory.yml
+      - -r
+      - /rulebooks/selfhealing_rulebook.yml
+      - -S
+      - /rulebooks
+      - --print-events
+      - -v
+    restart_policy: on-failure

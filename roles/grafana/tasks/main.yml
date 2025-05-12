@@ -1,0 +1,102 @@
+---
+- name: Create Grafana storage volume
+  community.docker.docker_volume:
+    name: "{{ grafana_storage_volume }}"
+    state: present
+
+- name: Ensure provisioning & dashboards dirs exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /etc/grafana/provisioning/datasources
+    - /etc/grafana/provisioning/dashboards
+    - /etc/grafana/dashboards
+
+- name: Copy Prometheus datasource provisioning (template)
+  ansible.builtin.template:
+    src: provisioning/datasources.yml.j2
+    dest: /etc/grafana/provisioning/datasources/datasources.yml
+    mode: '0644'
+
+- name: Copy dashboard provider provisioning (static)
+  ansible.builtin.copy:
+    src: provisioning/dashboards.yml
+    dest: /etc/grafana/provisioning/dashboards/dashboards.yml
+    mode: '0644'
+
+- name: Download cAdvisor dashboard JSON locally
+  ansible.builtin.get_url:
+    url: https://grafana.com/api/dashboards/14282/revisions/latest/download
+    dest: /tmp/cadvisor_dashboard.json
+    mode: '0644'
+    force: no
+  delegate_to: localhost
+  run_once: true
+
+- name: Copy cAdvisor dashboard to remote
+  ansible.builtin.copy:
+    src: /tmp/cadvisor_dashboard.json
+    dest: /etc/grafana/dashboards/cadvisor.json
+    mode: '0644'
+    force: no
+
+- name: Download Node Exporter Full dashboard JSON locally
+  ansible.builtin.get_url:
+    url: https://grafana.com/api/dashboards/1860/revisions/latest/download
+    dest: /tmp/nodeexporter_dashboard.json
+    mode: '0644'
+    force: no
+  delegate_to: localhost
+  run_once: true
+
+- name: Copy Node Exporter Full dashboard to remote
+  ansible.builtin.copy:
+    src: /tmp/nodeexporter_dashboard.json
+    dest: /etc/grafana/dashboards/nodeexporter.json
+    mode: '0644'
+    force: no
+
+- name: Check if datasource placeholder exists
+  ansible.builtin.shell: grep -q '\${DS_' /etc/grafana/dashboards/cadvisor.json
+  register: ds_token_check
+  failed_when: false
+  changed_when: false
+
+- name: Replace datasource token with "Prometheus"
+  ansible.builtin.replace:
+    path: /etc/grafana/dashboards/cadvisor.json
+    regexp: '"(?:\${)?DS_[A-Z0-9_-]+(?:})?"'
+    replace: '"Prometheus"'
+  when: ds_token_check.rc == 0
+
+- name: Check if datasource placeholder exists in nodeexporter dashboard
+  ansible.builtin.shell: grep -q '\${DS_' /etc/grafana/dashboards/nodeexporter.json
+  register: ds_token_check_node
+  failed_when: false
+  changed_when: false
+
+- name: Replace datasource token with "Prometheus" in nodeexporter dashboard
+  ansible.builtin.replace:
+    path: /etc/grafana/dashboards/nodeexporter.json
+    regexp: '"(?:\${)?DS_[A-Z0-9_-]+(?:})?"'
+    replace: '"Prometheus"'
+  when: ds_token_check_node.rc == 0
+
+- name: Deploy Grafana container
+  community.docker.docker_container:
+    name: grafana
+    image: "{{ grafana_image }}"
+    networks:
+      - name: "{{ network_name }}"
+    ports:
+      - "{{ grafana_port }}:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - /etc/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /etc/grafana/dashboards:/etc/grafana/dashboards:ro
+    privileged: true
+    restart_policy: always

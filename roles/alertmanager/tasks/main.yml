@@ -1,0 +1,41 @@
+---
+- name: Ensure Alertmanager config directory exists
+  ansible.builtin.file:
+    path: /etc/alertmanager
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy alertmanager.yml
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: /etc/alertmanager/alertmanager.yml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Deploy Alertmanager instances
+  community.docker.docker_container:
+    name: "{{ item.name }}"
+    image: "{{ alertmanager_image }}"
+    command: >-
+      --config.file=/etc/alertmanager/alertmanager.yml
+      --cluster.listen-address=0.0.0.0:9094
+      --cluster.peer={{ item.peer1 }}:9094
+      --cluster.settle-timeout=15s
+      --cluster.peer-timeout=5s
+    ports:
+      - "{{ item.host_port }}:9093"
+    volumes:
+      - "/etc/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"
+    networks:
+      - name: "{{ network_name }}"
+        aliases:
+          - "{{ item.name }}"
+    restart_policy: always
+  loop: "{{ alertmanager_instances }}"
+
+- name: Pause for Alertmanager cluster stabilization
+  ansible.builtin.pause:
+    seconds: 10
