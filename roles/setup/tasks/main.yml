@@ -16,6 +16,8 @@
       - ca-certificates
       - curl
     state: present
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
 
 - name: Ensure keyrings directory exists
   ansible.builtin.file:
@@ -41,6 +43,8 @@
       {{ ansible_distribution_release }} stable
     state: present
     filename: docker
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
 
 - name: Install Docker CE and Python requirements
   ansible.builtin.package:
@@ -51,6 +55,8 @@
       - python3-pip
       - python3-docker
     state: present
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
 
 - name: Ensure containerd service is enabled and running
   ansible.builtin.service:

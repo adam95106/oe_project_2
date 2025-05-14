@@ -1,3 +1,6 @@
+task_retries: 5
+task_delay: 5
+
 ansible_user_name: ansible
 ssh_key_path: "{{ lookup('env', 'HOME') }}/.ssh/ansible_remote"
 eda_ssh_key_path: /home/ansible/.ssh/eda_remote

@@ -11,7 +11,11 @@
     - cadvisor
 
 - name: Refresh Prometheus target config
-  hosts: monitoring_server
+  hosts: monitoring_clients
   become: true
-  roles:
-    - prometheus-targets
+  tasks:
+    - name: Run prometheus-targets role on server
+      import_role:
+        name: prometheus-targets
+      delegate_to: server
+      run_once: true

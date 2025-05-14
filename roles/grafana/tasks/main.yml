@@ -100,3 +100,5 @@
       - /etc/grafana/dashboards:/etc/grafana/dashboards:ro
     privileged: true
     restart_policy: always
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"

@@ -27,3 +27,5 @@
     networks:
       - name: "{{ network_name }}"
     restart_policy: unless-stopped
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"

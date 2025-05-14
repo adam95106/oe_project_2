@@ -23,3 +23,5 @@
     method: POST
   register: reload_response
   failed_when: reload_response.status not in [200, 204]
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"

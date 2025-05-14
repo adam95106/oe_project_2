@@ -36,6 +36,8 @@
       path: /opt/rulebooks
       dockerfile: Dockerfile
     tag: latest
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
 
 - name: Deploy Ansible EDA Controller container
   community.docker.docker_container:
@@ -60,3 +62,5 @@
       - --print-events
       - -v
     restart_policy: on-failure
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"

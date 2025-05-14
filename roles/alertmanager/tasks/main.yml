@@ -35,6 +35,8 @@
           - "{{ item.name }}"
     restart_policy: always
   loop: "{{ alertmanager_instances }}"
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
 
 - name: Pause for Alertmanager cluster stabilization
   ansible.builtin.pause:

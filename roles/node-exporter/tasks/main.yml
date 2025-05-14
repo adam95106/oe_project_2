@@ -8,3 +8,5 @@
     networks:
       - name: "{{ network_name }}"
     restart_policy: always
+  retries: "{{ task_retries }}"
+  delay: "{{ task_delay }}"
